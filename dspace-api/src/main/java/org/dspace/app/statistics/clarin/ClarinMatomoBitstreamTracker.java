@@ -27,6 +27,7 @@ import org.dspace.services.factory.DSpaceServicesFactory;
 import org.matomo.java.tracking.CustomVariable;
 import org.matomo.java.tracking.MatomoException;
 import org.matomo.java.tracking.MatomoRequest;
+import org.matomo.java.tracking.parameters.CustomVariables;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -79,7 +80,9 @@ public class ClarinMatomoBitstreamTracker extends ClarinMatomoTracker {
             matomoRequest.setActionUrl(itemIdentifier);
         }
         try {
-            matomoRequest.setPageCustomVariable(new CustomVariable("source", "bitstream"), 1);
+            // Deprecated. Try to configure the dimension "source" in Matomo and use
+            // matomoRequest.setDimensions(Map.of(1L, "bitstream"));
+            matomoRequest.setPageCustomVariables(new CustomVariables().add(new CustomVariable("source", "bitstream"), 1));
         } catch (MatomoException e) {
             log.error(e);
         }

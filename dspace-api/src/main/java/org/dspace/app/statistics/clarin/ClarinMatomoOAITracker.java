@@ -18,6 +18,7 @@ import org.dspace.services.factory.DSpaceServicesFactory;
 import org.matomo.java.tracking.CustomVariable;
 import org.matomo.java.tracking.MatomoException;
 import org.matomo.java.tracking.MatomoRequest;
+import org.matomo.java.tracking.parameters.CustomVariables;
 
 /**
  * Customized implementation of the ClarinMatomoTracker for the tracking the OAI harvesting events
@@ -55,7 +56,9 @@ public class ClarinMatomoOAITracker extends ClarinMatomoTracker {
         matomoRequest.setSiteId(siteId);
         log.debug("Logging to site " + matomoRequest.getSiteId());
         try {
-            matomoRequest.setPageCustomVariable(new CustomVariable("source", "oai"), 1);
+            // Deprecated. Try to configure the dimension "source" in Matomo and use
+            // matomoRequest.setDimensions(Map.of(1L, "oai"));
+            matomoRequest.setPageCustomVariables(new CustomVariables().add(new CustomVariable("source", "oai"), 1));
         } catch (MatomoException e) {
             log.error(e);
         }

@@ -7,14 +7,7 @@
  */
 package org.dspace.app.statistics.clarin;
 
-import java.util.Calendar;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
 import org.apache.log4j.Logger;
 import org.dspace.content.Item;
 import org.dspace.content.factory.ClarinServiceFactory;
@@ -23,6 +16,15 @@ import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.matomo.java.tracking.MatomoException;
 import org.matomo.java.tracking.MatomoRequest;
+import org.matomo.java.tracking.MatomoTracker;
+import org.matomo.java.tracking.parameters.DeviceResolution;
+import org.matomo.java.tracking.servlet.JavaxHttpServletWrapper;
+import org.matomo.java.tracking.servlet.ServletMatomoRequest;
+
+import java.util.Calendar;
+import java.util.Objects;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * The statistics Tracker for Matomo. This class prepare and send the track GET request to the `/matomo.php`
@@ -40,7 +42,7 @@ public class ClarinMatomoTracker {
     private final ConfigurationService configurationService =
             DSpaceServicesFactory.getInstance().getConfigurationService();
 
-    private org.matomo.java.tracking.MatomoTracker tracker = ClarinServiceFactory.getInstance().getMatomoTracker();
+    private MatomoTracker tracker = ClarinServiceFactory.getInstance().getMatomoTracker();
 
     /**
      * Create, prepare and send the track request
@@ -76,7 +78,7 @@ public class ClarinMatomoTracker {
     protected MatomoRequest createMatomoRequest(HttpServletRequest request, String pageName, String pageURL) {
         MatomoRequest matomoRequest = null;
         try {
-            matomoRequest = MatomoRequest.builder()
+            matomoRequest = ServletMatomoRequest.fromServletRequest(JavaxHttpServletWrapper.fromHttpServletRequest(request))
                     .siteId(1)
                     .actionUrl(pageURL) // include the query parameters to the url
                     .actionName(pageName)
@@ -125,8 +127,8 @@ public class ClarinMatomoTracker {
         matomoRequest.setPluginJava(false);
         matomoRequest.setPluginGears(false);
         matomoRequest.setPluginSilverlight(false);
-        matomoRequest.setParameter("cookie", 1);
-        matomoRequest.setDeviceResolution("1920x1080");
+        matomoRequest.setSupportsCookies(true);
+        matomoRequest.setDeviceResolution(DeviceResolution.builder().width(1920).height(1080).build());
     }
 
     /**
@@ -134,18 +136,7 @@ public class ClarinMatomoTracker {
      * @param matomoRequest prepared MatomoRequest for sending
      */
     public void sendTrackingRequest(MatomoRequest matomoRequest) {
-        try {
-            Future<HttpResponse> response = tracker.sendRequestAsync(matomoRequest);
-            // usually not needed:
-            HttpResponse httpResponse = response.get();
-            int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (statusCode > 399) {
-                // problem
-                log.error("Matomo tracker error the response has status code: " + statusCode);
-            }
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
+        tracker.sendRequestAsync(matomoRequest);
     }
 
     protected String getFullURL(HttpServletRequest request) {
